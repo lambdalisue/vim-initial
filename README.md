@@ -2,6 +2,8 @@
 
 [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
+![CleanShot 2024-11-20 at 21 40 49](https://github.com/user-attachments/assets/f3a4dfeb-7309-4ced-9608-a5ad41b4d6bb)
+
 **Initial** (_vim-initial_) is yet another jump-assistant plugin for Vim/Neovim
 powered by [Denops].
 
