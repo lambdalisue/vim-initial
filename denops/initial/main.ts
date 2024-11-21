@@ -8,7 +8,7 @@ import { assert, is } from "jsr:@core/unknownutil@^4.3.0";
 import { Evaluator } from "./evaluator.ts";
 import { type Location, Locator } from "./locator.ts";
 import { Indexer } from "./indexer.ts";
-import { type Fold, getwininfo, listFolds } from "./util.ts";
+import { defer, type Fold, getwininfo, listFolds } from "./util.ts";
 import { overlayCurtain, overlayLabels } from "./overlay.ts";
 
 const INTERRUPT = "\x03";
@@ -87,6 +87,7 @@ async function start(
     });
 
   // Overlay the curtain
+  await using _redraw = defer(() => denops.cmd(`echo "" | redraw`));
   await using _curtain = await overlayCurtain(denops, wininfo);
   signal?.throwIfAborted();
   await denops.cmd(
