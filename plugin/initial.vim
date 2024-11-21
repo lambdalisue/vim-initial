@@ -6,9 +6,8 @@ let g:loaded_initial = 1
 command! -nargs=* Initial call initial#command#Initial#call([<f-args>])
 
 function! s:style() abort
-  highlight default link InitialOverlayNormal Conceal
+  highlight default link InitialOverlayCurtain Conceal
   highlight default link InitialOverlayLabel IncSearch
-  highlight default link InitialOverlayMatch Special
 endfunction
 
 augroup initial_plugin

@@ -1,14 +1,13 @@
 import type { Denops, Entrypoint } from "jsr:@denops/std@^7.3.2";
 import { collect } from "jsr:@denops/std@^7.3.2/batch";
 import * as fn from "jsr:@denops/std@^7.3.2/function";
-import * as buffer from "jsr:@denops/std@^7.3.2/buffer";
-import * as popup from "jsr:@denops/std@^7.3.2/popup";
 import { assert, is } from "jsr:@core/unknownutil@^4.3.0";
 
 import { Evaluator } from "./evaluator.ts";
 import { type Location, Locator } from "./locator.ts";
 import { Indexer } from "./indexer.ts";
-import { defer, type Fold, getwininfo, listFolds } from "./util.ts";
+import { type Fold, getwininfo, listFolds } from "./util.ts";
+import { overlayCurtain, overlayLabels } from "./overlay.ts";
 
 const INTERRUPT = "\x03";
 const ESC = "\x1b";
@@ -85,29 +84,8 @@ async function start(
       };
     });
 
-  // Show overlay
-  await using overlay = await popup.open(denops, {
-    relative: "editor",
-    row: wininfo.winrow,
-    col: wininfo.wincol,
-    width: wininfo.width,
-    height: wininfo.height,
-    highlight: {
-      normal: "InitialOverlayNormal",
-    },
-  });
-  signal?.throwIfAborted();
-  await fn.win_execute(
-    denops,
-    overlay.winid,
-    "setlocal filetype=initial-overlay",
-  );
-  signal?.throwIfAborted();
-  await buffer.replace(
-    denops,
-    overlay.bufnr,
-    visibleContent.map(({ value, fold }) => fold ?? value),
-  );
+  // Overlay the curtain
+  await using _curtain = await overlayCurtain(denops, wininfo);
   signal?.throwIfAborted();
   await denops.cmd(
     `redraw | echohl Title | echo "[initial] Initial Character Input Mode" | echohl NONE`,
@@ -140,48 +118,22 @@ async function start(
   const labels = locations!.map((location) => {
     const offset = calcOffset(location.row, wininfo.topline, folds);
     const key = indexer.next();
-    const line = location.row - offset;
-    const column = location.col;
+    const row = location.row - offset;
+    const col = location.col;
     return {
-      line,
-      column,
+      row,
+      col,
       value: key,
-      length: key.length,
-      highlight: "InitialOverlayLabel",
       location,
     };
   });
 
-  // Generate annotated content
-  const annotatedContent = visibleContent
-    .map((record) => {
-      const { value, fold, row } = record;
-      const columns = labels.filter(({ location }) => location.row === row);
-      const newValue = columns.reduce((acc, { location, value }) => {
-        const head = acc.slice(0, Math.max(0, location.col - 1));
-        const tail = acc.slice(location.col + value.length - 1);
-        return head + value + tail;
-      }, fold ?? value);
-      return { ...record, value: newValue };
-    });
-
-  // Apply labels to the overlay
-  await buffer.replace(
-    denops,
-    overlay.bufnr,
-    annotatedContent.map(({ value }) => value),
-  );
-  signal?.throwIfAborted();
-  await buffer.decorate(denops, overlay.bufnr, labels);
+  await using _labels = await overlayLabels(denops, wininfo, labels);
   signal?.throwIfAborted();
   await denops.cmd(
     `redraw | echohl Title | echo "[initial] Label Jump Mode" | echohl NONE`,
   );
   signal?.throwIfAborted();
-  await using _decoration = defer(async () => {
-    await buffer.undecorate(denops, overlay.bufnr);
-    await denops.cmd("redraw");
-  });
 
   // Wait until the user selects a label and jump to the location if found.
   const key = await readUserInput(denops, indexer.length);
