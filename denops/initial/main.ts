@@ -8,7 +8,7 @@ import { assert, is } from "jsr:@core/unknownutil@^4.3.0";
 import { Evaluator } from "./evaluator.ts";
 import { type Location, Locator } from "./locator.ts";
 import { Indexer } from "./indexer.ts";
-import { defer, getwininfo, listFolds } from "./util.ts";
+import { defer, type Fold, getwininfo, listFolds } from "./util.ts";
 
 const INTERRUPT = "\x03";
 const ESC = "\x1b";
@@ -138,10 +138,7 @@ async function start(
   // Generate labels
   const indexer = new Indexer(locations!.length);
   const labels = locations!.map((location) => {
-    const offset = wininfo.topline - 1 + folds
-      .filter(([_, end]) => end < location.row)
-      .map(([start, end]) => end - start)
-      .reduce((acc, cur) => acc + cur, 0);
+    const offset = calcOffset(location.row, wininfo.topline, folds);
     const key = indexer.next();
     const line = location.row - offset;
     const column = location.col;
@@ -196,6 +193,13 @@ async function start(
   if (label) {
     await jumpToLocation(denops, label.location);
   }
+}
+
+function calcOffset(row: number, topline: number, folds: Fold[]): number {
+  return folds
+    .filter(([start, end]) => topline <= start && end < row)
+    .map(([start, end]) => end - start)
+    .reduce((acc, cur) => acc + cur, topline - 1);
 }
 
 async function readUserInput(
