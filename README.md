@@ -1,5 +1,7 @@
 # 🅰️ Initial
 
+[![Test](https://github.com/lambdalisue/vim-initial/actions/workflows/test.yml/badge.svg)](https://github.com/lambdalisue/vim-initial/actions/workflows/test.yml)
+[![codecov](https://codecov.io/gh/lambdalisue/vim-initial/graph/badge.svg?token=0WzxKNH22o)](https://codecov.io/gh/lambdalisue/vim-initial)
 [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 ![CleanShot 2024-11-20 at 21 40 49](https://github.com/user-attachments/assets/f3a4dfeb-7309-4ced-9608-a5ad41b4d6bb)
