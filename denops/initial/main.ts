@@ -74,7 +74,9 @@ async function start(
       if (fold) {
         return {
           ...record,
-          fold: fold[2],
+          // Fold text is truncated to fit the window width
+          // so we have to mimic that behavior here.
+          fold: fold[2].slice(0, wininfo.width - wininfo.textoff),
         };
       }
       return {
