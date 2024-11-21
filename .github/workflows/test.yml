@@ -107,7 +107,7 @@ jobs:
       - name: Perform pre-cache
         run: |
           deno cache \
-            ${DENOPS_TEST_DENOPS_PATH}/denops/@denops-private/mod.ts ./denops/fall/main.ts
+            ${DENOPS_TEST_DENOPS_PATH}/denops/@denops-private/mod.ts ./denops/initial/main.ts
 
       - name: Test
         run: deno task test:coverage
