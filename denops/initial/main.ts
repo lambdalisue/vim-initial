@@ -1,3 +1,5 @@
+import "./polyfill.ts";
+
 import type { Denops, Entrypoint } from "jsr:@denops/std@^7.3.2";
 import { collect } from "jsr:@denops/std@^7.3.2/batch";
 import * as fn from "jsr:@denops/std@^7.3.2/function";
