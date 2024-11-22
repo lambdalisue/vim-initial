@@ -122,7 +122,7 @@ async function start(
     const offset = calcOffset(location.row, wininfo.topline, folds);
     const key = indexer.next();
     const visualRow = location.row - offset;
-    const visualCol = location.col;
+    const visualCol = location.col + wininfo.textoff;
     return {
       ...location,
       visualRow,

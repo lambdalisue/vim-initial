@@ -1,8 +1,8 @@
 import type { Denops } from "jsr:@denops/std@^7.3.2";
 import * as fn from "jsr:@denops/std@^7.3.2/function";
+import * as vimFn from "jsr:@denops/std@^7.3.2/function/vim";
 import * as nvimFn from "jsr:@denops/std@^7.3.2/function/nvim";
 import * as buffer from "jsr:@denops/std@^7.3.2/buffer";
-import * as popup from "jsr:@denops/std@^7.3.2/popup";
 
 import type { Location } from "./locator.ts";
 import { defer, type WinInfo } from "./util.ts";
@@ -51,33 +51,37 @@ async function overlayLabelsVim(
   wininfo: WinInfo,
   labels: Label[],
 ): Promise<AsyncDisposable> {
+  const content = toVimContent(
+    wininfo.width,
+    wininfo.height,
+    labels,
+  );
+  const mask = toVimMask(
+    wininfo.width,
+    wininfo.height,
+    labels,
+  );
   await using stack = new AsyncDisposableStack();
-  for (const label of labels) {
-    const winrow = wininfo.winrow + label.row - 1;
-    const wincol = wininfo.wincol + wininfo.textoff + label.col - 1;
-    const width = label.value.length;
-    const height = 1;
-    const pwin = stack.use(
-      await popup.open(denops, {
-        relative: "editor",
-        row: winrow,
-        col: wincol,
-        width: width,
-        height: height,
-        highlight: {
-          normal: HIGHLIGHT_LABEL,
-        },
-        zindex: 100,
-        noRedraw: true,
-      }),
-    );
-    await buffer.replace(denops, pwin.bufnr, [label.value]);
-    await fn.win_execute(
-      denops,
-      pwin.winid,
-      `setlocal buftype=nofile bufhidden=wipe signcolumn=no nobuflisted nolist nonumber norelativenumber nowrap noswapfile filetype=initial-overlay`,
-    );
-  }
+  const bufnr = await fn.bufadd(denops, "");
+  const winid = await vimFn.popup_create(denops, bufnr, {
+    line: wininfo.winrow,
+    col: wininfo.wincol,
+    highlight: HIGHLIGHT_LABEL,
+    zindex: 100,
+    mask,
+  });
+  stack.defer(async () => {
+    await vimFn.popup_close(denops, winid);
+  });
+  await buffer.replace(denops, bufnr, content);
+  stack.defer(async () => {
+    await denops.cmd(`silent! bwipeout! ${bufnr}`);
+  });
+  await fn.win_execute(
+    denops,
+    winid,
+    `setlocal buftype=nofile signcolumn=no nobuflisted nolist nonumber norelativenumber nowrap noswapfile filetype=initial-overlay`,
+  );
   return stack.move();
 }
 
@@ -110,4 +114,44 @@ async function overlayLabelsNvim(
       await nvimFn.nvim_buf_clear_namespace(denops, bufnr, namespace, 0, -1);
     },
   };
+}
+
+function toVimContent(
+  width: number,
+  height: number,
+  labels: Label[],
+): string[] {
+  const content = Array.from({ length: height }, () => " ".repeat(width));
+  labels.forEach(({ visualRow, visualCol, value }) => {
+    const y = visualRow - 1;
+    const x = visualCol - 1;
+    content[y] = content[y].slice(0, x) + value +
+      content[y].slice(x + value.length);
+  });
+  return content;
+}
+
+function toVimMask(
+  width: number,
+  height: number,
+  labels: Label[],
+): (readonly [number, number, number, number])[] {
+  return Array.from({ length: height }, (_, i) => {
+    const row = i + 1;
+    const columns = labels
+      .filter(({ visualRow }) => visualRow === row)
+      .sort((a, b) => a.visualCol - b.visualCol);
+    let offset = 1;
+    const masks = columns
+      .map(({ visualCol, value }) => {
+        if (visualCol === offset) {
+          return undefined;
+        }
+        const mask = [offset, visualCol - 1, row, row] as const;
+        offset = visualCol + value.length;
+        return mask;
+      })
+      .filter((v) => v !== undefined);
+    return [...masks, [offset, width, row, row] as const];
+  }).flat();
 }
