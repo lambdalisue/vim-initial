@@ -16,7 +16,7 @@ export async function overlayCurtain(
 ): Promise<AsyncDisposable> {
   const bufnr = await fn.winbufnr(denops, wininfo.winid);
   const decorations = Array.from({
-    length: wininfo.botline - wininfo.topline,
+    length: wininfo.botline - wininfo.topline + 1,
   }, (_, i) => ({
     line: wininfo.topline + i,
     column: 1,
