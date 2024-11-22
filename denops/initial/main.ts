@@ -121,13 +121,13 @@ async function start(
   const labels = locations!.map((location) => {
     const offset = calcOffset(location.row, wininfo.topline, folds);
     const key = indexer.next();
-    const row = location.row - offset;
-    const col = location.col;
+    const visualRow = location.row - offset;
+    const visualCol = location.col;
     return {
-      row,
-      col,
+      ...location,
+      visualRow,
+      visualCol,
       value: key,
-      location,
     };
   });
 
@@ -146,7 +146,7 @@ async function start(
   signal?.throwIfAborted();
   const label = labels.find(({ value }) => value === key);
   if (label) {
-    await jumpToLocation(denops, label.location);
+    await jumpToLocation(denops, label);
   }
 }
 

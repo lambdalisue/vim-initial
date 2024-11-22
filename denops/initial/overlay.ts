@@ -1,5 +1,6 @@
 import type { Denops } from "jsr:@denops/std@^7.3.2";
 import * as fn from "jsr:@denops/std@^7.3.2/function";
+import * as nvimFn from "jsr:@denops/std@^7.3.2/function/nvim";
 import * as buffer from "jsr:@denops/std@^7.3.2/buffer";
 import * as popup from "jsr:@denops/std@^7.3.2/popup";
 
@@ -28,10 +29,24 @@ export async function overlayCurtain(
 
 export type Label = Location & {
   value: string;
-  location: Location;
+  visualRow: number;
+  visualCol: number;
 };
 
-export async function overlayLabels(
+export function overlayLabels(
+  denops: Denops,
+  wininfo: WinInfo,
+  labels: Label[],
+): Promise<AsyncDisposable> {
+  switch (denops.meta.host) {
+    case "vim":
+      return overlayLabelsVim(denops, wininfo, labels);
+    case "nvim":
+      return overlayLabelsNvim(denops, wininfo, labels);
+  }
+}
+
+async function overlayLabelsVim(
   denops: Denops,
   wininfo: WinInfo,
   labels: Label[],
@@ -64,4 +79,35 @@ export async function overlayLabels(
     );
   }
   return stack.move();
+}
+
+async function overlayLabelsNvim(
+  denops: Denops,
+  wininfo: WinInfo,
+  labels: Label[],
+): Promise<AsyncDisposable> {
+  const bufnr = await fn.winbufnr(denops, wininfo.winid);
+  const namespace = await nvimFn.nvim_create_namespace(
+    denops,
+    "initial-overlay",
+  );
+  for (const label of labels) {
+    await nvimFn.nvim_buf_set_extmark(
+      denops,
+      bufnr,
+      namespace,
+      label.row - 1,
+      label.col - 1,
+      {
+        virt_text: [[label.value, [HIGHLIGHT_LABEL]]],
+        virt_text_pos: "overlay",
+        hl_mode: "combine",
+      },
+    );
+  }
+  return {
+    async [Symbol.asyncDispose]() {
+      await nvimFn.nvim_buf_clear_namespace(denops, bufnr, namespace, 0, -1);
+    },
+  };
 }
