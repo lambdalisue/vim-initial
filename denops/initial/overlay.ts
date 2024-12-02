@@ -51,15 +51,19 @@ async function overlayLabelsVim(
   wininfo: WinInfo,
   labels: Label[],
 ): Promise<AsyncDisposable> {
+  const normLabels = labels.map(({ visualCol, ...label }) => ({
+    ...label,
+    visualCol: visualCol + wininfo.textoff,
+  }));
   const content = toVimContent(
     wininfo.width,
     wininfo.height,
-    labels,
+    normLabels,
   );
   const mask = toVimMask(
     wininfo.width,
     wininfo.height,
-    labels,
+    normLabels,
   );
   await using stack = new AsyncDisposableStack();
   const bufnr = await fn.bufadd(denops, "");
@@ -101,10 +105,10 @@ async function overlayLabelsNvim(
       bufnr,
       namespace,
       label.row - 1,
-      label.col - 1,
+      label.visualCol - 1,
       {
         virt_text: [[label.value, [HIGHLIGHT_LABEL]]],
-        virt_text_win_col: label.col - 1,
+        virt_text_win_col: label.visualCol - 1,
         hl_mode: "combine",
       },
     );

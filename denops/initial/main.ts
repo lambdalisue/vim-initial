@@ -8,7 +8,13 @@ import { assert, is } from "jsr:@core/unknownutil@^4.3.0";
 import { Evaluator } from "./evaluator.ts";
 import { type Location, Locator } from "./locator.ts";
 import { Indexer } from "./indexer.ts";
-import { defer, type Fold, getwininfo, listFolds } from "./util.ts";
+import {
+  defer,
+  type Fold,
+  getByteLength,
+  getwininfo,
+  listFolds,
+} from "./util.ts";
 import { overlayCurtain, overlayLabels } from "./overlay.ts";
 
 const INTERRUPT = "\x03";
@@ -118,18 +124,21 @@ async function start(
 
   // Generate labels
   const indexer = new Indexer(locations!.length);
-  const labels = locations!.map((location) => {
+  const labels = await Promise.all(locations!.map(async (location) => {
     const offset = calcOffset(location.row, wininfo.topline, folds);
     const key = indexer.next();
     const visualRow = location.row - offset;
-    const visualCol = location.col + wininfo.textoff;
+    const visualCol = await fn.strdisplaywidth(
+      denops,
+      content[location.row - 1].value.substring(0, location.col),
+    );
     return {
       ...location,
       visualRow,
       visualCol,
       value: key,
     };
-  });
+  }));
 
   await using _labels = await overlayLabels(denops, wininfo, labels);
   signal?.throwIfAborted();
@@ -146,7 +155,10 @@ async function start(
   signal?.throwIfAborted();
   const label = labels.find(({ value }) => value === key);
   if (label) {
-    await jumpToLocation(denops, label);
+    // Calculate proper col
+    const row = label.row;
+    const col = getByteLength(content[row - 1].value.substring(0, label.col));
+    await jumpToLocation(denops, { row: label.row, col });
   }
 }
 

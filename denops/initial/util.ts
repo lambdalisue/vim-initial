@@ -1,6 +1,8 @@
 import type { Denops } from "jsr:@denops/std@^7.3.2";
 import * as fn from "jsr:@denops/std@^7.3.2/function";
 
+const encoder = new TextEncoder();
+
 export type Fold = [start: number, end: number, text: string];
 
 export function listFolds(
@@ -30,4 +32,8 @@ export function defer(callback: () => Promise<void>): AsyncDisposable {
       return callback();
     },
   };
+}
+
+export function getByteLength(s: string): number {
+  return encoder.encode(s).length;
 }
