@@ -1,5 +1,5 @@
-import type { Denops } from "jsr:@denops/std@^7.3.2";
-import * as fn from "jsr:@denops/std@^7.3.2/function";
+import type { Denops } from "jsr:@denops/std@^7.4.0";
+import * as fn from "jsr:@denops/std@^7.4.0/function";
 
 const encoder = new TextEncoder();
 

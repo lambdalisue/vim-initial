@@ -1,8 +1,8 @@
-import type { Denops } from "jsr:@denops/std@^7.3.2";
-import * as fn from "jsr:@denops/std@^7.3.2/function";
-import * as vimFn from "jsr:@denops/std@^7.3.2/function/vim";
-import * as nvimFn from "jsr:@denops/std@^7.3.2/function/nvim";
-import * as buffer from "jsr:@denops/std@^7.3.2/buffer";
+import type { Denops } from "jsr:@denops/std@^7.4.0";
+import * as fn from "jsr:@denops/std@^7.4.0/function";
+import * as vimFn from "jsr:@denops/std@^7.4.0/function/vim";
+import * as nvimFn from "jsr:@denops/std@^7.4.0/function/nvim";
+import * as buffer from "jsr:@denops/std@^7.4.0/buffer";
 
 import type { Location } from "./locator.ts";
 import { defer, type WinInfo } from "./util.ts";
