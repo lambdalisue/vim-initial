@@ -5,7 +5,6 @@ import { collect } from "jsr:@denops/std@^7.3.2/batch";
 import * as fn from "jsr:@denops/std@^7.3.2/function";
 import { assert, is } from "jsr:@core/unknownutil@^4.3.0";
 
-import { Evaluator } from "./evaluator.ts";
 import { type Location, Locator } from "./locator.ts";
 import { Indexer } from "./indexer.ts";
 import {
@@ -44,11 +43,9 @@ async function start(
 ): Promise<void> {
   const { signal } = options;
   const initialLength = options.initialLength ?? INITIAL_LENGTH;
-  const [line_, column_, content_, winid, wininfos, folds] = await collect(
+  const [content_, winid, wininfos, folds] = await collect(
     denops,
     (denops) => [
-      fn.line(denops, "."),
-      fn.col(denops, "."),
       fn.getline(denops, 1, "$"),
       fn.win_getid(denops),
       getwininfo(denops),
@@ -56,7 +53,6 @@ async function start(
     ],
   );
   signal?.throwIfAborted();
-  const base = { row: line_, col: column_ };
   const content = content_.map((value, i) => ({ row: i + 1, value }));
   const wininfo = wininfos.find(({ winid: id }) => id === winid);
   if (!wininfo) {
@@ -64,7 +60,6 @@ async function start(
     throw new Error(`Window not found: ${winid}`);
   }
 
-  const evaluator = new Evaluator(base);
   const locator = new Locator();
 
   // Create visible content
@@ -108,11 +103,8 @@ async function start(
     return;
   }
 
-  // Find locations of 'initial' in the content then score and sort them.
-  const locations = locator
-    .locate(initial, visibleContent)
-    .map((location) => ({ ...location, score: evaluator.score(location) }))
-    .sort((a, b) => b.score - a.score);
+  // Find locations of 'initial' in the content.
+  const locations = locator.locate(initial, visibleContent);
 
   // Shortcut
   switch (locations.length) {
