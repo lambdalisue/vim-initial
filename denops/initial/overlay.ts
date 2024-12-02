@@ -104,7 +104,7 @@ async function overlayLabelsNvim(
       label.col - 1,
       {
         virt_text: [[label.value, [HIGHLIGHT_LABEL]]],
-        virt_text_pos: "overlay",
+        virt_text_win_col: label.col - 1,
         hl_mode: "combine",
       },
     );
