@@ -181,5 +181,6 @@ async function jumpToLocation(
   denops: Denops,
   location: Location,
 ): Promise<void> {
-  await denops.cmd(`normal! ${location.row}G${location.col}|zv`);
+  await fn.cursor(denops, [location.row, location.col]);
+  await denops.cmd("normal! zv");
 }
